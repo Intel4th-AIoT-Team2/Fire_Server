@@ -6,20 +6,20 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>770</width>
-    <height>318</height>
+    <width>804</width>
+    <height>386</height>
    </rect>
   </property>
   <property name="windowTitle">
    <string>Form</string>
   </property>
-  <layout class="QHBoxLayout" name="horizontalLayout_2">
+  <layout class="QVBoxLayout" name="verticalLayout">
    <item>
-    <layout class="QHBoxLayout" name="horizontalLayout">
+    <layout class="QHBoxLayout" name="horizontalLayout" stretch="1,1">
      <item>
       <layout class="QVBoxLayout" name="pQVBoxLayout1">
        <item>
-        <widget class="QLabel" name="pTLcamView">
+        <widget class="QLabel" name="pTLcamView1">
          <property name="text">
           <string/>
          </property>
@@ -28,7 +28,15 @@
       </layout>
      </item>
      <item>
-      <layout class="QVBoxLayout" name="pQVBoxLayout2"/>
+      <layout class="QVBoxLayout" name="pQVBoxLayout2">
+       <item>
+        <widget class="QLabel" name="pTLcamView2">
+         <property name="text">
+          <string/>
+         </property>
+        </widget>
+       </item>
+      </layout>
      </item>
     </layout>
    </item>

@@ -5,10 +5,11 @@
 #include <QTimer>
 #include <QTcpServer>
 #include <QTcpSocket>
-#include <QAbstractSocket>
 #include <QImage>
 #include <QPixmap>
 #include <QDebug>
+#include <QList>
+#include <opencv2/opencv.hpp>
 
 namespace Ui {
 class Tab1Camera;
@@ -26,13 +27,15 @@ private:
     Ui::Tab1Camera *ui;
     QTcpServer *server;
     QTcpSocket *client;
+//    QList<QTcpSocket *> clients;
     QTimer *timer;
+    void processFrame(cv::Mat&);
+    void displayImage(QTcpSocket*, const cv::Mat&);
 
 private slots:
     void slotNewConnection();
     void slotReadData();
     void slotClientDisconnected();
-    void slotProcessImage();
 };
 
 #endif // TAB2CAMERA_H
