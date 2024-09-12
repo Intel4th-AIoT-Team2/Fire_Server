@@ -9,6 +9,7 @@
 #include <QImage>
 #include <QPixmap>
 #include <QDebug>
+#include <opencv2/opencv.hpp>
 
 namespace Ui {
 class Tab1Camera;
@@ -27,6 +28,11 @@ private:
     QTcpServer *server;
     QTcpSocket *client;
     QTimer *timer;
+
+    QImage cam1_image;
+
+public slots:
+    void slotCopyCam1Image(cv::Mat&);
 
 private slots:
     void slotNewConnection();

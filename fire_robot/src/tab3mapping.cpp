@@ -347,6 +347,7 @@ void Tab3Mapping::onBtnMapAreaSetClicked(bool checked)
 /* "카메라1" 버튼 클릭 이벤트 */
 void Tab3Mapping::onBtnCam1SelectClicked()
 {
+    emit signalRequestCam1Image(cam_image);
     current_cam = 1;
     drawCorners();
     ui->labelInfoText->setText("카메라1이(가) 선택되었습니다.");

@@ -28,6 +28,21 @@ Tab1Camera::~Tab1Camera()
     delete ui;
 }
 
+void Tab1Camera::slotCopyCam1Image(cv::Mat& mat)
+{
+    qDebug() << cam1_image.format();
+    cv::Mat temp = cv::Mat(
+                cam1_image.height(),
+                cam1_image.width(),
+                CV_8UC4,
+                (void*)cam1_image.constBits(),
+                cam1_image.bytesPerLine());
+    cv::Mat rgb;
+    cv::cvtColor(temp, rgb,cv::COLOR_BGRA2BGR);
+    qDebug() << cam1_image.height() << cam1_image.width();
+    mat = temp.clone();
+}
+
 void Tab1Camera::slotNewConnection() {
     if (client) {
         client->deleteLater();
@@ -70,6 +85,7 @@ void Tab1Camera::slotReadData() {
 
         QImage image;
         image.loadFromData(imageData);
+        cam1_image = image.copy();  // copy image
         if (!image.isNull()) {
             ui->pTLcamView->setPixmap(QPixmap::fromImage(image));
         }

@@ -71,6 +71,9 @@ private slots:
 
 public slots:
     QString convertPointToTurtle(cv::Point2f, int);
+
+signals:
+    void signalRequestCam1Image(cv::Mat&);
 };
 
 #endif // TAB3MAPPING_H
