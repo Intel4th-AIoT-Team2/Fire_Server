@@ -2,11 +2,9 @@
 #define TAB1CAMERA_H
 
 #include <QWidget>
-#include <QTimer>
 #include <QTcpServer>
 #include <QTcpSocket>
 #include <QImage>
-#include <QPixmap>
 #include <QDebug>
 #include <QList>
 #include <opencv2/opencv.hpp>
@@ -26,10 +24,8 @@ public:
 private:
     Ui::Tab1Camera *ui;
     QTcpServer *server;
-    QTcpSocket *client;
-//    QList<QTcpSocket *> clients;
-    QTimer *timer;
-    void processFrame(cv::Mat&);
+    QList<QTcpSocket *> clients;
+    void processFrame(QTcpSocket*, cv::Mat&);
     void displayImage(QTcpSocket*, const cv::Mat&);
 
 private slots:

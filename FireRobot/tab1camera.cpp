@@ -14,11 +14,8 @@ Tab1Camera::Tab1Camera(QWidget *parent) :
 
 Tab1Camera::~Tab1Camera()
 {
-    if (client) {
-        client->disconnect();
-        client->close();
-        delete client;
-    }
+    qDeleteAll(clients);
+    clients.clear();
 
     server->close();
     delete server;
@@ -26,30 +23,29 @@ Tab1Camera::~Tab1Camera()
 }
 
 void Tab1Camera::slotNewConnection() {
-    if (client) {
-        client->disconnect();
-        client->deleteLater();
-    }
-    client = server->nextPendingConnection();
+    QTcpSocket *newClient = server->nextPendingConnection();
 
-    // 클라이언트 연결에 타임아웃 설정
-    client->setSocketOption(QAbstractSocket::LowDelayOption, 1);
-    client->setSocketOption(QAbstractSocket::KeepAliveOption, 1);
+    newClient->setSocketOption(QAbstractSocket::LowDelayOption, 1);  // 지연 최소화
+    newClient->setSocketOption(QAbstractSocket::KeepAliveOption, 1); // 연결 유효 확인
 
-    connect(client, SIGNAL(readyRead()), this, SLOT(slotReadData()));
-    connect(client, SIGNAL(disconnected()), this, SLOT(slotClientDisconnected()));
+    connect(newClient, SIGNAL(readyRead()), this, SLOT(slotReadData()));
+    connect(newClient, SIGNAL(disconnected()), this, SLOT(slotClientDisconnected()));
+
+    clients.append(newClient);  // 클라이언트 목록에 추가
 
     QByteArray response = "서버와 연결되었습니다.";
-    client->write(response);
-    client->flush();
+    newClient->write(response);
+    newClient->flush();
 }
 
 void Tab1Camera::slotReadData() {
-    if (!client)
+    QTcpSocket *senderClient = qobject_cast<QTcpSocket*>(sender());
+
+    if (!senderClient)
         return;
 
     static QByteArray buffer;
-    buffer.append(client->readAll());
+    buffer.append(senderClient->readAll());
 
     while (buffer.size() >= 16) {
         bool ok = false;
@@ -69,12 +65,12 @@ void Tab1Camera::slotReadData() {
         // OpenCV로 수신된 데이터 처리
         cv::Mat img = cv::imdecode(std::vector<uchar>(imageData.begin(), imageData.end()), cv::IMREAD_COLOR);
         if (!img.empty()) {
-            processFrame(img);  // 수신한 프레임을 처리
+            processFrame(senderClient, img);  // 수신한 프레임을 처리
         }
     }
 }
 
-void Tab1Camera::processFrame(cv::Mat& frame) {
+void Tab1Camera::processFrame(QTcpSocket *client, cv::Mat& frame) {
     // OpenCV로 영상 처리: 나중에 화재 탐지 모델 적용 가능
     // 현재는 수신된 프레임을 그대로 화면에 출력
     // 화재 탐지 모델 예시
@@ -88,12 +84,22 @@ void Tab1Camera::processFrame(cv::Mat& frame) {
 
     // 영상 출력
     if (!qimg.isNull()) {
-        ui->pTLcamView1->setPixmap(QPixmap::fromImage(qimg));
+        if (client == clients[0])
+            ui->pTLcamView1->setPixmap(QPixmap::fromImage(qimg));
+        else if (client == clients[1])
+            ui->pTLcamView2->setPixmap(QPixmap::fromImage(qimg));
     }
 }
 
 void Tab1Camera::slotClientDisconnected() {
-    client->deleteLater();
-    client = nullptr;
-    qDebug() << "클라이언트가 연결을 끊었습니다.";
+    QTcpSocket *senderClient = qobject_cast<QTcpSocket*>(sender());
+
+    if (senderClient) {
+        clients.removeOne(senderClient);  // 클라이언트 목록에서 제거
+        senderClient->deleteLater();
+        if (senderClient == clients[0])
+            qDebug() << "CCTV1과 연결이 끊어졌습니다.";
+        else if (senderClient == clients[1])
+            qDebug() << "CCTV2와 연결이 끊어졌습니다.";
+    }
 }
