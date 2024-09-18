@@ -31,11 +31,26 @@ void Tab1Camera::slotNewConnection() {
     connect(newClient, SIGNAL(readyRead()), this, SLOT(slotReadData()));
     connect(newClient, SIGNAL(disconnected()), this, SLOT(slotClientDisconnected()));
 
-    clients.append(newClient);  // 클라이언트 목록에 추가
+    // 클라이언트가 없을 때만 추가
+    if (clients.size() < 2) {
+        clients.append(newClient);  // 클라이언트 목록에 추가
 
-    QByteArray response = "서버와 연결되었습니다.";
-    newClient->write(response);
-    newClient->flush();
+        // 첫 번째 클라이언트는 첫 번째 라벨에 매핑, 두 번째 클라이언트는 두 번째 라벨에 매핑
+        if (clients.size() == 1) {
+            clientLabelMap[newClient] = ui->pTLcamView1;
+        } else if (clients.size() == 2) {
+            clientLabelMap[newClient] = ui->pTLcamView2;
+        }
+
+        QByteArray response = "서버와 연결되었습니다.";
+        newClient->write(response);
+        newClient->flush();
+    }
+    else {
+        // 세 번째 클라이언트는 받지 않음
+        newClient->disconnect();
+        newClient->deleteLater();
+    }
 }
 
 void Tab1Camera::slotReadData() {
@@ -82,12 +97,10 @@ void Tab1Camera::processFrame(QTcpSocket *client, cv::Mat& frame) {
     // QImage로 변환
     QImage qimg(frame.data, frame.cols, frame.rows, frame.step, QImage::Format_BGR888);
 
-    // 영상 출력
-    if (!qimg.isNull()) {
-        if (client == clients[0])
-            ui->pTLcamView1->setPixmap(QPixmap::fromImage(qimg));
-        else if (client == clients[1])
-            ui->pTLcamView2->setPixmap(QPixmap::fromImage(qimg));
+    // 고정된 클라이언트-라벨 매핑에 따라 출력
+    if (clientLabelMap.contains(client) && !qimg.isNull()) {
+        QLabel *label = clientLabelMap[client];
+        label->setPixmap(QPixmap::fromImage(qimg));
     }
 }
 
@@ -96,7 +109,9 @@ void Tab1Camera::slotClientDisconnected() {
 
     if (senderClient) {
         clients.removeOne(senderClient);  // 클라이언트 목록에서 제거
+        clientLabelMap.remove(senderClient);  // 클라이언트와 라벨 매핑 제거
         senderClient->deleteLater();
+
         if (senderClient == clients[0])
             qDebug() << "CCTV1과 연결이 끊어졌습니다.";
         else if (senderClient == clients[1])

@@ -1,4 +1,4 @@
-QT       += core gui network
+QT       += core gui network charts sql
 
 greaterThan(QT_MAJOR_VERSION, 4): QT += widgets
 
@@ -26,7 +26,7 @@ HEADERS += \
 
 FORMS += \
     mainwidget.ui \
-    tab1camera.ui
+    tab1camera.ui \
 
 # Default rules for deployment.
 qnx: target.path = /tmp/$${TARGET}/bin

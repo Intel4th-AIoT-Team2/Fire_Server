@@ -7,6 +7,8 @@
 #include <QImage>
 #include <QDebug>
 #include <QList>
+#include <QMap>
+#include <QLabel>
 #include <opencv2/opencv.hpp>
 
 namespace Ui {
@@ -25,8 +27,8 @@ private:
     Ui::Tab1Camera *ui;
     QTcpServer *server;
     QList<QTcpSocket *> clients;
+    QMap<QTcpSocket*, QLabel*> clientLabelMap;
     void processFrame(QTcpSocket*, cv::Mat&);
-    void displayImage(QTcpSocket*, const cv::Mat&);
 
 private slots:
     void slotNewConnection();
