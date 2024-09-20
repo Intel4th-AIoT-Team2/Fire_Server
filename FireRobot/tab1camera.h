@@ -32,7 +32,7 @@ private:
     QTcpSocket *appClient = nullptr;
     QMap<QTcpSocket*, QLabel*> clientLabelMap;
     void processFrame(QTcpSocket*, cv::Mat&);
-    void sendFrame(const QByteArray &);
+    void sendFrame(const QByteArray &, int);
 
 private slots:
     void slotNewConnection();
