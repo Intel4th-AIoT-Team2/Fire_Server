@@ -8,6 +8,7 @@
 #include <QDebug>
 #include <QList>
 #include <QMap>
+#include <QBuffer>
 #include <QLabel>
 #include <opencv2/opencv.hpp>
 
@@ -26,14 +27,19 @@ public:
 private:
     Ui::Tab1Camera *ui;
     QTcpServer *server;
+    QTcpServer *appServer;
     QList<QTcpSocket *> clients;
+    QTcpSocket *appClient = nullptr;
     QMap<QTcpSocket*, QLabel*> clientLabelMap;
     void processFrame(QTcpSocket*, cv::Mat&);
+    void sendFrame(const QByteArray &);
 
 private slots:
     void slotNewConnection();
+    void slotAppNewConnection();
     void slotReadData();
     void slotClientDisconnected();
+    void slotAppDisconnected();
 };
 
 #endif // TAB2CAMERA_H

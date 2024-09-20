@@ -7,9 +7,15 @@ Tab1Camera::Tab1Camera(QWidget *parent) :
 {
     ui->setupUi(this);
 
+    // CCTV 영상 수신, port : 5000
     server = new QTcpServer(this);
     connect(server, SIGNAL(newConnection()), this, SLOT(slotNewConnection()));
     server->listen(QHostAddress::Any, 5000);
+
+    // CCTV 영상 송신, port : 5002
+    appServer = new QTcpServer(this);
+    connect(appServer, SIGNAL(newConnection()), this, SLOT(slotAppNewConnection()));
+    appServer->listen(QHostAddress::Any, 5002);
 }
 
 Tab1Camera::~Tab1Camera()
@@ -18,7 +24,10 @@ Tab1Camera::~Tab1Camera()
     clients.clear();
 
     server->close();
+    appServer->close();
+
     delete server;
+    delete appServer;
     delete ui;
 }
 
@@ -53,10 +62,23 @@ void Tab1Camera::slotNewConnection() {
     }
 }
 
+void Tab1Camera::slotAppNewConnection() {
+    appClient = appServer->nextPendingConnection();
+
+    appClient->setSocketOption(QAbstractSocket::LowDelayOption, 1);  // 지연 최소화
+    appClient->setSocketOption(QAbstractSocket::KeepAliveOption, 1); // 연결 유효 확인
+
+    connect(appClient, SIGNAL(disconnected()), this, SLOT(slotAppDisconnected()));
+
+    QByteArray response = "서버와 연결되었습니다.";
+    appClient->write(response);
+    appClient->flush();
+}
+
 void Tab1Camera::slotReadData() {
     QTcpSocket *senderClient = qobject_cast<QTcpSocket*>(sender());
 
-    if (!senderClient)
+    if (!senderClient || senderClient->state() != QAbstractSocket::ConnectedState)
         return;
 
     static QByteArray buffer;
@@ -94,14 +116,33 @@ void Tab1Camera::processFrame(QTcpSocket *client, cv::Mat& frame) {
     if (frame.empty())
         return;
 
+    // 앱으로 프레임 전송
+    if (appClient && appClient->state() == QAbstractSocket::ConnectedState) {
+        if (client == clients[0]) { // CCTV1 영상 전송
+            std::vector<uchar> buffer;
+            cv::imencode(".jpg", frame, buffer);
+            QByteArray imageData(reinterpret_cast<const char*>(buffer.data()), buffer.size());
+            sendFrame(imageData);
+        }
+    }
+
     // QImage로 변환
     QImage qimg(frame.data, frame.cols, frame.rows, frame.step, QImage::Format_BGR888);
-
     // 고정된 클라이언트-라벨 매핑에 따라 출력
     if (clientLabelMap.contains(client) && !qimg.isNull()) {
         QLabel *label = clientLabelMap[client];
         label->setPixmap(QPixmap::fromImage(qimg));
     }
+}
+
+void Tab1Camera::sendFrame(const QByteArray &frame) {
+    // 크기 전송
+    QByteArray sizeData = QByteArray::number(frame.size()).rightJustified(16, '0');
+    appClient->write(sizeData);
+
+    // 프레임 전송
+    appClient->write(frame);
+    appClient->flush();
 }
 
 void Tab1Camera::slotClientDisconnected() {
@@ -116,5 +157,12 @@ void Tab1Camera::slotClientDisconnected() {
             qDebug() << "CCTV1과 연결이 끊어졌습니다.";
         else if (senderClient == clients[1])
             qDebug() << "CCTV2와 연결이 끊어졌습니다.";
+    }
+}
+
+void Tab1Camera::slotAppDisconnected() {
+    if (appClient) {
+        appClient->deleteLater();
+        appClient = nullptr;
     }
 }
